@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content} )}">
+
+<!-- content 라는 이름으로 조각 정의하기 -->
+<th:block th:fragment="content"> 
+
+<h1 class="mt-4">Board Read Page</h1>
+
+<div class="form-group">
+  <label >번호</label>
+  <input type="text" class="form-control" th:value="${dto.no}" readonly >
+</div>
+
+<div class="form-group">
+  <label >제목</label>
+  <input type="text" class="form-control" th:value="${dto.title}" readonly >
+</div>
+<div class="form-group">
+  <label >내용</label>
+  <textarea class="form-control" rows="5" readonly>[[${dto.content}]]</textarea>
+</div>
+<div class="form-group">
+  <label >작성자</label>
+  <input type="text" class="form-control" th:value="${dto.writer}" readonly>
+</div>
+<div class="form-group">
+  <label >등록일</label>
+  <input type="text" class="form-control" th:value="${ #temporals.format(dto.regDate, 'yyyy/MM/dd HH:mm:ss') }" readonly>
+</div>
+<div class="form-group">
+  <label >수정일</label>
+  <input type="text" class="form-control" th:value="${ #temporals.format(dto.modDate, 'yyyy/MM/dd HH:mm:ss') }" readonly>
+</div>
+
+  <div class="card shadow mb-4" style="margin-top:10px">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">댓글보기</h6>
+            </div>
+            <div class="card-body" id="commentdiv">
+            </div>
+            <div class="card-body">
+                <textarea class="form-control" id="commentContent" rows="3"></textarea>
+                <!-- 버튼에 클릭 이벤트 함수 설정 -->
+                <button type="button" class="btn btn-secondary" onclick="registerComment()">댓글등록</button>
+            </div>
+        </div>
+        
+<a th:href="@{/board/modify(no = ${dto.no})}">
+  <button type="button" class="btn btn-primary">수정</button>
+</a>
+
+
+<!-- 페이지 번호 파라미터 추가 -->
+<!-- /board/list?page=3 -->
+<a th:href="@{/board/list(page = ${page} )}">
+  <button type="button" class="btn btn-info">목록으로</button>
+</a>
+
+<!-- 인라인 속성 추가(타임리프의 변수 표현식처리) -->
+	<script th:inline="javascript">
+		
+		// 페이지 로드 시 showComment 함수를 호출하여 댓글 목록 출력
+		document.addEventListener("DOMContentLoaded", () => {
+			showComment();
+		});
+	
+		// 댓글 목록을 출력하는 메소드
+		function showComment() {
+			// 해당 페이지의 게시물 데이터
+			let board = [[${dto}]];
+			
+			// 댓글 div 요소 가져오기
+			let comment_div = document.getElementById("commentdiv");
+			
+			// 서버에 게시물 목록 요청하기
+			$.ajax({
+				type: "GET",		// API 메소드
+				url: "/comment/list?boardNo=" + board.no,		// API 주소
+				success: function(list) {
+					
+					// div 초기화 (자식 요소 모두 삭제)
+					comment_div.innerHTML = ' ';
+					
+					// 리스트 안에 있는 요소를 하나씩 꺼내서 태그를 생성
+					for (comment of list){
+						
+						// 작성자 span 태그 생성
+						let writerSpan = document.createElement('span');
+
+						// 스타일 설정
+						writerSpan.className = 'fw-bold strong mar';
+						
+						// 작성자 이름 출력
+						writerSpan.textContent = comment.writer;
+						
+						// 댓글 내용 span 태그 설정
+						let contentSpan = document.createElement('span');
+						
+						// 스타일 설정
+						contentSpan.className= 'mar';
+						
+						// 댓글 내용 출력
+						contentSpan.textContent = '  ' +comment.content;
+						
+						// 댓글 삭제 링크 생성
+						let deleteLink = document.createElement('a');
+						
+						// 클릭 이벤트 설정
+						deleteLink.href = '#';
+						deleteLink.addEventListener("click", function(event) {
+						    event.preventDefault(); // 링크 이동 방지
+						    removeComment(comment.commentNo);
+						});
+						deleteLink.textContent = '삭제';
+						
+						// 줄바꿈 태그 생성
+						let lineBreak = document.createElement('br');
+						
+											
+                        comment_div.appendChild(writerSpan);
+                        comment_div.appendChild(contentSpan);
+                        comment_div.appendChild(deleteLink);
+                        comment_div.appendChild(lineBreak);
+
+					}
+				}	
+			});
+		}
+		
+		// 댓글 등록 이벤트
+		function registerComment() {
+				
+				// 게시물 데이터 가져오기
+				let board = [[${dto}]];
+				
+				// 댓글 태그 가져오기
+				let commentContent = document.getElementById('commentContent');
+				
+				// 등록할 댓글 데이터 생성
+				let dto = {
+						'boardNo' : board.no,
+						'content' : commentContent.value
+				}
+				
+				// AJAX를 호출하여 서버에 댓글 데이터 전송 + 등록 요청
+				$.ajax({
+					type: "POST",
+					url: "/comment/register",
+					data: dto,
+					success: function(newNo) {
+						if(newNo){
+							// textarea 필드 초기화
+							commentContent.value = null;
+							
+							// 기존 목록 지우고 댓글 목록을 다시 출력
+							showComment();
+						}
+					}
+				});
+		}
+	
+		// 댓글 삭제 이벤트
+		function removeComment(commentNo) {
+			$.ajax({
+				type: "DELETE",
+				url: "/comment/remove?commentNo=" + commentNo,
+				success: function(response) {
+					if(response){
+						// 댓글 목록을 다시 출력
+						showComment();
+					}
+				}
+			});
+		}
+		
+		
+	</script>
+
+
+</th:block>
+</th:block>

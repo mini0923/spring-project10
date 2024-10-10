@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content} )}">
+
+<!-- content 라는 이름으로 조각 정의하기 -->
+<th:block th:fragment="content"> 
+<h1>Board List Page
+    <span>
+        <a href="/board/register">
+            <button type="button" class="btn btn-outline-primary"> 게시물 등록</button>
+        </a>
+    </span>
+</h1>
+<table class="table table-striped">
+    <!-- 부트스트랩의 스타일 적용 -->
+    <thead>
+	    <tr>
+	        <th>#</th>
+		        <th>제목</th>
+		        <th>작성자</th>
+		        <th>등록일</th>
+	    </tr>
+    </thead>
+    <tbody>
+	    <tr th:each="dto : ${list} ">
+		        <th>
+		        	<!-- 링크 표현식@{} -->
+		        	<!-- /board/read?no=1 -->
+		        	<a th:href="@{/board/read(no=${dto.no}, page = ${list.number + 1} )}">[[${dto.no}]]</a>	
+	        	</th>
+		        <td>[[${dto.title}]]</td>
+		        <td>[[${dto.writer}]]</td>
+		        <td> [[ ${ #temporals.format(dto.regDate, 'yyyy/MM/dd') } ]]</td>
+		        
+		       
+ 	    </tr>
+
+    </tbody>
+
+</table>
+
+<!-- 주석 해제: ctrl + shift + \ -->
+
+<!-- 4. 페이지 번호를 클릭하면 해당 페이지로 이동하도록 처리 (최종) -->
+<!-- a 태그에 list 주소를 입력하고, 선택한 페이지 번호를 파라미터로 전달 -->
+<ul class="pagination h-100 justify-content-center align-items-center">
+	<th:block th:each="page : ${#numbers.sequence(1, list.totalPages)}">
+		<th:block th:if="${list.number+1 == page}">
+			<li class="page-item active">					
+			<a class="page-link" th:href="@{/board/list(page = ${page})}">[[${page}]]</a>
+			</li>
+		</th:block>
+		<th:block th:unless="${list.number+1 == page}">
+			<li class="page-item">
+			<a class="page-link" th:href="@{/board/list(page = ${page})}">[[${page}]]</a>
+			</li>
+		</th:block>
+	</th:block>
+</ul>
+
+</th:block>
+</th:block>
+
+<!-- 전달받은 자바의 데이터를 자바스크립트의 자료형으로 변환하는 기능 -->
+<script th:inline="javascript">
+	/* 화면이 처음 로드가 될 때 새로운 게시물의 번호를 표시*/
+	$(document).ready(
+			
+		function(){
+			let no = [[ ${no} ]];
+			
+			/* 새로운 게시물 번호가 있는 경우에만 표시 */
+			if (no != null){
+				alert(no + "번 글이 등록되었습니다.");				
+			}
+		}			
+	);
+	
+</script>
+
+
+
+
+
+
+
